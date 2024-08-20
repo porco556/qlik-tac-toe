@@ -9,16 +9,11 @@ import Board from "./components/Board";
 
 type Outcome = "Player" | "Computer" | "Nobody";
 
-const tempName: number[][] = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6],
-];
+
+export const COMPUTER = 0;
+export const PLAYER = 1;
+export const DRAW = -1;
+export const KEEP_PLAYING = 2;
 
 function App() {
   const [disabled, setDisabled] = useState(false);
@@ -27,45 +22,29 @@ function App() {
   ]);
   const [outcome, setOutcome] = useState<Outcome | undefined>();
 
-  // back-end code
-  const checkWinner = async (board: number[]) => {
-    // figure out if the game has been won, and by who...
-  };
-
-  // calculate computer's next move
-  const calculateMove = async (board: number[]) => {
-    setDisabled(true);
-    // simulate exciting server action
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    // add logic here that returns the best computer move (remove temporary logic below once this logic is in place)
-
-    // temporarily return random move by computer
-    const availableSpots = board.reduce(
-      (acc: number[], currentValue, index) => {
-        if (currentValue === -1) {
-          acc.push(index);
-        }
-        return acc;
-      },
-      []
-    );
-
-    const newBoard = [...board];
-    const computerMoveIndex = Math.floor(Math.random() * availableSpots.length);
-    newBoard[availableSpots[computerMoveIndex]] = 0;
-
-    setDisabled(false);
-    return newBoard;
-  };
-
   // back to front-end code
   const onPlayerMoveDone = async (id: number) => {
     const newBoard = [...board];
-    newBoard[id] = 1;
-
-    const evenNewerBoard: number[] = await calculateMove(newBoard);
-    setBoard(evenNewerBoard);
+    newBoard[id] = PLAYER;
+    const res = await fetch("http://localhost:8080/board", {
+      method:"post", 
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({board:newBoard})
+    });
+    const content = await res.json() as {winner: number, board: number[]};
+    const evenNewerBoard = content.board;
+    
+    setBoard(content.board);
+    if (content.winner != -1 ){
+      setOutcome(content.winner == COMPUTER ?  "Computer" : "Player");
+    }
+    else{
+      setBoard(evenNewerBoard);
+    }
+    
   };
 
   return (
